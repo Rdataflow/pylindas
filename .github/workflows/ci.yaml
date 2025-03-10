@@ -39,4 +39,4 @@ jobs:
         PYTHONWARNINGS: default
         PYTHONUTF8: 1
       run: |
-        pytest -s -vv tests
+        pytest -s -vv tests example/Shared_Dimensions/shared_dimension_generation/sd_example.py
