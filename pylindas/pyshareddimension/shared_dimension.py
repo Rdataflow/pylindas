@@ -19,9 +19,19 @@ from pylindas.lindas.namespaces import (
     SD_MD,
     SH,
 )
-from pylindas.lindas.query import query_lindas
 from pylindas.lindas.exceptions import SharedDimensionAlreadyExistsError
 from pyshacl import validate
+
+
+def query_lindas(query: str, environment: str):
+    """Thin wrapper that lazily imports the real ``query_lindas``.
+
+    Keeps ``pylindas.pycube.cube`` importable without the ``query`` extra and
+    gives tests a module-level name to patch.
+    """
+    from pylindas.lindas.query import query_lindas as _query_lindas
+    return _query_lindas(query, environment=environment)
+
 
 class SharedDimension:
     _sd_uri: URIRef # Note: Shared Dimension usually do not have a trailing "/" in there URL

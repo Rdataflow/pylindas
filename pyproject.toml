@@ -22,11 +22,13 @@ dependencies = [
     "PyYAML>=6.0.2",
     "rdflib>=7.0.0",  # verified graph-isomorphic through 7.1.4 for all example cubes (mock/biotope/airport, timestamps excluded); lower bound retained, newer rdflib OK
     "requests>=2.32.3",
-    "sparql-dataframe>=0.4",
     "SPARQLWrapper>=2.0.0",
-    "jsonschema>=4.0.0",
-    "shapely>=2.0.0",
 ]
+
+[project.optional-dependencies]
+shared = ["shapely>=2.0.0"]
+query = ["sparql-dataframe>=0.4"]
+fetch = ["jsonschema>=4.0.0"]
 
 [project.urls]
 Homepage = "https://github.com/Kronmar-Bafu/lindas-pylindas"  
@@ -34,6 +36,8 @@ Homepage = "https://github.com/Kronmar-Bafu/lindas-pylindas"
 [project.scripts]
 pycube = "pylindas.cli:main"
 
+[tool.setuptools.package-data]
+pylindas = ["pycube/schema/*.json"]
 [tool.bumpver]
 current_version = "1.1.0"
 version_pattern = "MAJOR.MINOR.PATCH"

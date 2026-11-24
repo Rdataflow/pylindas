@@ -92,13 +92,18 @@ def test_sanitize_value_branch_dispatch(value, datatype, lang, branch):
     lang=st.sampled_from([None, "de", "fr", "en", "it"]),
 )
 def test_sanitize_value_na_precedence(na_value, datatype, lang):
-    """NA inputs always yield an empty cube:Undefined Literal, regardless of
-    the datatype or language arguments (the NA branch pre-empts all others)."""
+    """NA inputs always yield cube:Undefined, regardless of the language argument
+    (the NA branch pre-empts all others): the IRI ``cube:Undefined`` for IRI
+    dimensions (datatype ``URI``), ``""^^cube:Undefined`` for literal dimensions
+    (Requirement 6.8)."""
     # Precondition: the chosen value really is NA per pandas.
     assert pd.isna(na_value)
 
     result = Cube._sanitize_value(na_value, datatype, lang=lang)
 
+    if datatype == "URI":
+        assert result == URIRef(CUBE.Undefined)
+        return
     assert isinstance(result, Literal)
     assert result.datatype == CUBE.Undefined
     # Lexical (string) value is the empty string.

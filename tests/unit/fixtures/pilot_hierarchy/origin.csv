@@ -1,0 +1,4 @@
+id,parent,Label_de,Label_fr,Label_it,Label_en
+total,,In- und Ausland,National et étranger,Nazionale ed estero,Domestic and foreign
+domestic,total,Inland,National,Nazionale,Domestic
+foreign,total,Ausland,Étranger,Estero,Foreign

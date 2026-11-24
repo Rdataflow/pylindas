@@ -10,7 +10,7 @@ import json
 import os
 from datetime import datetime
 from typing import Dict, Any, List
-from jsonschema import Draft202012Validator
+from pylindas._optional import require_extra
 
 from pylindas.lindas.paths import reject_traversal
 
@@ -219,10 +219,15 @@ class DataEuropaFetcher(object):
         description_schema_path = os.path.join(current_file_dir, 'description.schema.json')
         description_schema = read_schema(description_schema_path)
         description = self._transform_metadata(metadata, distributions['frictionless'])
-        schema_path = os.path.relpath(
-            description_schema_path,
-            start=output_base
-        )
+        try:
+            schema_path = os.path.relpath(
+                description_schema_path,
+                start=output_base
+            )
+        except ValueError:
+            # Windows: no relative path exists between different drives
+            # (e.g. package on D:, output on C:). Use the absolute path instead.
+            schema_path = os.path.abspath(description_schema_path)
         description = {
             "$schema": f"{schema_path}",
             **description
@@ -231,6 +236,7 @@ class DataEuropaFetcher(object):
         with open(description_json_filename, 'w') as f:
             f.write(json.dumps(description, indent=2))
         
+        Draft202012Validator = require_extra("jsonschema", "fetch").Draft202012Validator
         validator = Draft202012Validator(description_schema)
         errors = list(validator.iter_errors(description))
         for error in errors:

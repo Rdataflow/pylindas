@@ -1,5 +1,5 @@
 from rdflib import Graph, Literal, RDF, URIRef
-from shapely.geometry import shape
+from pylindas._optional import require_extra
 import json
 
 from pylindas.lindas.paths import reject_traversal
@@ -23,6 +23,7 @@ class GeoSharedDimension(object):
         """
         if not geojson:
             return None
+        shape = require_extra("shapely.geometry", "shared").shape
         geom = shape(geojson)
         return geom.wkt
 

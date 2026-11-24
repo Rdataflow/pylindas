@@ -22,6 +22,7 @@ from hypothesis import given, settings
 from hypothesis import strategies as st
 
 from pylindas.pycube.cube import Cube
+from tests.unit.conftest import minimal_description
 
 # ---------------------------------------------------------------------------
 # Task 9.1 — Properties 1 & 2 (base-URI normalization + cube URI construction)
@@ -47,13 +48,8 @@ version_text = st.integers(min_value=0, max_value=9999).map(str)
 
 def _make_cube_yaml(base_uri: str, identifier: str, version: str) -> dict:
     """Build a fresh minimal ``cube_yaml`` for a single ``Cube`` construction."""
-    return {
-        "Base-URI": base_uri,
-        "Identifier": identifier,
-        "Version": version,
-        "Namespace": "ns",
-        "dimensions": {"k": {"dimension-type": "Key Dimension"}},
-    }
+    return minimal_description(**{"Base-URI": base_uri, "Identifier": identifier,
+                                  "Version": version, "Namespace": "ns"})
 
 
 def _build_cube(base_uri: str, identifier: str = "ident", version: str = "1") -> Cube:

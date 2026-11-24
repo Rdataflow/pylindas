@@ -91,3 +91,45 @@ def _no_network(monkeypatch):
         pass
 
     yield
+
+
+# --- Minimal valid cube input for tests that only exercise concepts/hierarchies -----------
+# Cube() validates the frame against the description (Requirement 6), so tests that do not
+# care about observations still need a description with one real key dimension and a
+# frame whose columns match it exactly.
+def minimal_dimensions() -> dict:
+    """A description's ``dimensions`` block with a single key dimension ``k``."""
+    return {"k": {"name": {"en": "Key"}, "description": {"en": "Key dimension"}, "path": "key",
+                  "dimension-type": "Key Dimension", "scale-type": "nominal"}}
+
+
+def minimal_description(**overrides) -> dict:
+    """A complete, schema-valid top-level cube description (fresh dict on every call).
+
+    Keyword ``overrides`` replace or add top-level keys (e.g. ``Concepts=...``,
+    ``Identifier="x"``, ``dimensions=...``). Defaults to the single key dimension ``k``.
+    """
+    desc = {
+        "Name": {"en": "Name"},
+        "Description": {"en": "Description"},
+        "Publisher": [{"IRI": "https://example.org/publisher"}],
+        "Creator": [{"IRI": "https://example.org/creator"}],
+        "Contact Point": {"E-Mail": "contact@example.org"},
+        "Base-URI": "https://example.org/cube/",
+        "Identifier": "c",
+        "Version": 1,
+        "Namespace": "ex",
+        "dimensions": minimal_dimensions(),
+    }
+    desc.update(overrides)
+    return desc
+
+
+def minimal_frame():
+    """One-row frame matching :func:`minimal_dimensions`."""
+    import pandas as pd
+    return pd.DataFrame({"k": ["a"]})
+
+
+def pytest_configure(config):
+    config.addinivalue_line("markers", "slow: slow tests (e.g. wheel build and install in a throwaway venv)")

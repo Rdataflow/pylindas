@@ -1,5 +1,6 @@
 from SPARQLWrapper import SPARQLWrapper, JSON
 
+
 def query_lindas(query: str, environment: str):
     match environment:
         case "TEST":

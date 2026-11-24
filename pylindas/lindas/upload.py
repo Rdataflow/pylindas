@@ -19,11 +19,20 @@ store, ``username`` / ``password``. Example:
     password=...
 """
 
+import re
 from configparser import ConfigParser
-from typing import Union
+from numbers import Real
+from typing import Literal, Union
 
+import rdflib
 import requests
 from requests.auth import HTTPBasicAuth
+
+from pylindas.lindas.exceptions import (
+    UploadError,
+    UploadTimeoutError,
+    UploadValidationError,
+)
 
 
 def _load_config(db_file: str, environment: str) -> dict:
@@ -48,6 +57,139 @@ def _auth_from_config(config: dict) -> Union[HTTPBasicAuth, None]:
     if username and password:
         return HTTPBasicAuth(username, password)
     return None
+
+
+def _mask(text: str, secrets: tuple) -> str:
+    """Replace every secret (longest first) in ``text`` by ``***``."""
+    found = sorted({x for x in secrets if x}, key=len, reverse=True)
+    if not found:
+        return text
+    # Single left-to-right pass: sequential replace() would let one secret's
+    # replacement destroy an overlapping occurrence of the other and leave
+    # parts of it unmasked.
+    return re.sub("|".join(re.escape(x) for x in found), "***", text)
+
+
+_USERINFO = re.compile(r"(?<=://)[^/?#\s]*@")
+
+
+def _mask_url(url: str, secrets: tuple) -> str:
+    """Strip URL userinfo (``scheme://user:pw@host``) and mask secrets."""
+    return _mask(_USERINFO.sub("***@", url), secrets)
+
+
+def upload_graph(
+    data: Union[bytes, str, rdflib.Graph],
+    *,
+    endpoint: str,
+    graph_uri: str,
+    auth: tuple,
+    method: Literal["PUT", "POST"] = "PUT",
+    timeout: float = 300,
+) -> None:
+    """Upload Turtle to a GraphDB named graph using explicit arguments only.
+
+    Reads no ini file and no environment variable. ``PUT`` replaces the named
+    graph, ``POST`` appends to it (SPARQL 1.1 Graph Store HTTP Protocol).
+
+    Raises:
+        UploadValidationError: invalid arguments (no request is sent).
+        UploadTimeoutError: the request exceeded ``timeout`` seconds.
+        UploadError: the endpoint answered with a status >= 400. Username and
+            password are masked in the response body.
+    """
+    problems = []
+    if not isinstance(data, (bytes, str, rdflib.Graph)):
+        problems.append(
+            f"data must be bytes, str or rdflib.Graph, got {type(data).__name__}"
+        )
+    if not isinstance(endpoint, str) or not endpoint.strip():
+        problems.append("endpoint must be a non-empty string")
+    if not isinstance(graph_uri, str) or not graph_uri.strip():
+        problems.append("graph_uri must be a non-empty string")
+    if (
+        not isinstance(auth, (tuple, list))
+        or len(auth) != 2
+        or not all(isinstance(x, str) and x for x in auth)
+    ):
+        problems.append("auth must be a (username, password) pair of non-empty strings")
+    if method not in ("PUT", "POST"):
+        problems.append("method must be 'PUT' or 'POST'")
+    if (
+        isinstance(timeout, bool)
+        or not isinstance(timeout, Real)
+        or not timeout > 0
+    ):
+        problems.append("timeout must be a number greater than 0")
+    if problems:
+        raise UploadValidationError("; ".join(problems))
+
+    if isinstance(data, bytes):
+        body = data
+    elif isinstance(data, str):
+        body = data.encode("utf-8")
+    else:
+        body = data.serialize(format="turtle").encode("utf-8")
+
+    _send_graph(
+        body,
+        endpoint=endpoint,
+        graph_uri=graph_uri,
+        auth=HTTPBasicAuth(auth[0], auth[1]),
+        method=method,
+        timeout=timeout,
+    )
+
+
+def _send_graph(
+    body: bytes,
+    *,
+    endpoint: str,
+    graph_uri: str,
+    auth: Union[HTTPBasicAuth, None],
+    method: str,
+    timeout: Union[float, None] = 300,
+) -> None:
+    """Send already-validated Turtle bytes; ``auth=None`` sends no credentials.
+
+    ``timeout=None`` disables the request timeout (used by ``upload_ttl``).
+    """
+    secrets = (auth.username, auth.password) if auth is not None else ()
+    try:
+        resp = requests.request(
+            method,
+            endpoint,
+            params={"graph": graph_uri},
+            data=body,
+            headers={"Content-Type": "text/turtle"},
+            auth=auth,
+            timeout=timeout,
+        )
+    except requests.Timeout:
+        timed_out = True
+    else:
+        timed_out = False
+
+    safe_endpoint = _mask_url(endpoint, secrets)
+
+    if timed_out:
+        # Raised outside the ``except`` block so neither __cause__ nor
+        # __context__ keeps the original exception (its text may echo
+        # credentials). The message is built from masked values only.
+        raise UploadTimeoutError(
+            f"{method} to <{_mask(graph_uri, secrets)}> at {safe_endpoint} "
+            f"timed out"
+            + (f" after {timeout} seconds" if timeout is not None else "")
+        )
+
+    if resp.status_code >= 400:
+        resp_body = _mask(resp.text or "", secrets)
+        raise UploadError(
+            f"{method} to <{_mask(graph_uri, secrets)}> at {safe_endpoint} "
+            f"failed with status {resp.status_code}: {resp_body}",
+            status=resp.status_code,
+            body=resp_body,
+        )
 
 
 def upload_ttl(
@@ -90,14 +232,28 @@ def upload_ttl(
     def _add_file(file: str):
         print(f"uploading: {file}")
         with open(file, "rb") as f:
-            resp = requests.post(
-                endpoint,
-                params=params,
-                headers={"Content-Type": "text/turtle"},
-                data=f,
+            content = f.read()
+        failure = None
+        try:
+            _send_graph(
+                content,
+                endpoint=endpoint,
+                graph_uri=graph_uri,
                 auth=auth,
+                method="POST",
+                timeout=None,
             )
-        resp.raise_for_status()
+        except UploadError as exc:
+            failure = exc
+        if failure is None:
+            return
+        # Raised outside the ``except`` block: no __cause__/__context__ chain.
+        if isinstance(failure, UploadTimeoutError):
+            raise requests.exceptions.Timeout(str(failure))
+        response = requests.Response()
+        response.status_code = failure.status
+        response._content = failure.body.encode("utf-8")
+        raise requests.HTTPError(str(failure), response=response)
 
     files = [filename] if isinstance(filename, str) else filename
     for f in files:

@@ -1,0 +1,129 @@
+Name:
+  de: Industrieholzerhebung - hierarchical
+  fr: Enquête sur le bois d'industrie
+  it: Indagine sul legno industriale
+  en: Industrial roundwood survey
+Description:
+  de: Im Rahmen der Industrieholzerhebung werden jährlich mittels Fragebogen Betriebe befragt, die Industrieholz verwerten.
+  fr: Dans le cadre de l'enquête sur le bois d'industrie, les entreprises qui valorisent du bois d'industrie sont interrogées chaque année au moyen d'un questionnaire.
+  it: Nell'ambito dell'indagine sul legno industriale, ogni anno vengono intervistate tramite questionario le aziende che utilizzano legno industriale.
+  en: As part of the Industrial Wood Survey, companies that process industrial roundwood are surveyed annually by means of a questionnaire.
+Publisher:
+  - IRI: https://register.ld.admin.ch/opendataswiss/org/bundesamt-fur-umwelt-bafu
+Creator:
+  - IRI: https://register.ld.admin.ch/opendataswiss/org/bundesamt-fur-umwelt-bafu
+Contributor:
+  - IRI: https://register.ld.admin.ch/opendataswiss/org/bundesamt-fur-umwelt-bafu
+Date Created:
+  2026-11-18
+Contact Point:
+  E-Mail: wald@bafu.admin.ch
+  Name: BAFU, Abteilung Wald
+Base-URI: https://environment.ld.admin.ch/foen
+Identifier: wood-showcase-hierarchy
+Version: 1
+Work Status: Draft
+Visualize: True
+Accrual Periodicity: yearly
+Namespace: wsc
+dimensions:
+  year:
+    name:
+      de: Jahr
+      fr: Année
+      it: Anno
+      en: Year
+    description:
+      de: Jahr der Erhebung
+      fr: Année de l'enquête
+      it: Anno dell'indagine
+      en: Year of the survey
+    dimension-type: Key Dimension
+    scale-type: interval
+    datatype: gYear
+    path: year
+    data-kind:
+      type: temporal
+      unit: year
+  assortment:
+    name:
+      de: Sortiment
+      fr: Assortiment
+      it: Assortimento
+      en: Assortment
+    description:
+      de: Holzsortiment
+      fr: Assortiment de bois
+      it: Assortimento di legno
+      en: Wood assortment
+    dimension-type: Key Dimension
+    scale-type: nominal
+    datatype: URI
+    path: assortment
+    mapping:
+      type: concept
+      replacement-automated: /assortment/{assortment}
+      concept-table: assortment
+    hierarchy:
+      - name: Sortiment
+        root: total   # concept ID; the notebook had the absolute IRI <cube>/concept/assortment/total
+        next-in-hierarchy:
+          name: Sortimentsgruppe
+          path: http://schema.org/hasPart
+          next-in-hierarchy:
+            name: Holzart
+            path: http://schema.org/hasPart
+  origin:
+    name:
+      de: Herkunft
+      fr: Origine
+      it: Origine
+      en: Origin
+    description:
+      de: Herkunft des Holzes
+      fr: Origine du bois
+      it: Origine del legno
+      en: Origin of the wood
+    dimension-type: Key Dimension
+    scale-type: nominal
+    datatype: URI
+    path: origin
+    mapping:
+      type: concept
+      replacement-automated: /origin/{origin}
+      concept-table: origin
+    hierarchy:
+      - name: Herkunft
+        root: total   # concept ID; the notebook had the absolute IRI <cube>/concept/origin/total
+        next-in-hierarchy:
+          name: Inland / Ausland
+          path: http://schema.org/hasPart
+  quantity:
+    name:
+      de: Holzvolumen
+      fr: Volume de bois
+      it: Volume di legno
+      en: Wood volume
+    description:
+      de: Holzvolumen in m³
+      fr: Volume de bois en m³
+      it: Volume di legno in m³
+      en: Wood volume in m³
+    dimension-type: Measure Dimension
+    scale-type: ratio
+    datatype: decimal
+    path: data
+    unit: M3
+Concepts:
+  assortment:
+    id-field: id
+    URI: /assortment/{id}
+    name-field: Label
+    multilingual: true
+    parent-field: parent
+  origin:
+    id-field: id
+    URI: /origin/{id}
+    name-field: Label
+    multilingual: true
+    parent-field: parent

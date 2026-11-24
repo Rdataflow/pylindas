@@ -1,0 +1,11 @@
+# Expected schema:hasPart edge set of the pilot cube (notebook step 5: 6 triples).
+# Concept IRIs are <cube>/concept/<dimension>/<id>, cube = https://environment.ld.admin.ch/foen/wood-showcase-hierarchy/1
+<https://environment.ld.admin.ch/foen/wood-showcase-hierarchy/1/concept/assortment/total> <http://schema.org/hasPart>
+    <https://environment.ld.admin.ch/foen/wood-showcase-hierarchy/1/concept/assortment/forest-wood>,
+    <https://environment.ld.admin.ch/foen/wood-showcase-hierarchy/1/concept/assortment/residual-wood> .
+<https://environment.ld.admin.ch/foen/wood-showcase-hierarchy/1/concept/assortment/forest-wood> <http://schema.org/hasPart>
+    <https://environment.ld.admin.ch/foen/wood-showcase-hierarchy/1/concept/assortment/hardwood>,
+    <https://environment.ld.admin.ch/foen/wood-showcase-hierarchy/1/concept/assortment/softwood> .
+<https://environment.ld.admin.ch/foen/wood-showcase-hierarchy/1/concept/origin/total> <http://schema.org/hasPart>
+    <https://environment.ld.admin.ch/foen/wood-showcase-hierarchy/1/concept/origin/domestic>,
+    <https://environment.ld.admin.ch/foen/wood-showcase-hierarchy/1/concept/origin/foreign> .

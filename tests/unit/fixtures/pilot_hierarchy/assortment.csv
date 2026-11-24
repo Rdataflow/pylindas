@@ -1,0 +1,6 @@
+id,parent,Label_de,Label_fr,Label_it,Label_en
+total,,"Gesamtes Sortiment (Wald-, Rest- und Altholz)","Ensemble des assortiments (Bois de forêt, sous-produits de bois et bois de récupération)","Assortimento totale (Legno forestale, residui di legno e legno usato)","Total assortment (Forest Wood, residual and post-consumer wood)"
+forest-wood,total,Waldholz,Bois de forêt,Legno forestale,Forest wood
+residual-wood,total,Rest- und Altholz,Sous-produits de bois et bois de récupération,Residui di legno e legno usato,Residual and post-consumer wood
+hardwood,forest-wood,Laubholz,Feuillus,Legno di latifoglie,Hardwood
+softwood,forest-wood,Nadelholz,Résineux,Legno di conifere,Softwood
