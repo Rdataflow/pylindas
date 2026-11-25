@@ -174,8 +174,8 @@ class SharedDimension:
             Graph: The graph object with namespaces bound.
         """
         graph = Graph()
-        for prefix, nmspc in Namespaces.items():
-            graph.bind(prefix=prefix, namespace=nmspc)
+        for prefix, namespace in Namespaces.items():
+            graph.bind(prefix, namespace)
 
         return graph
 
@@ -187,20 +187,14 @@ class SharedDimension:
         Returns:
             None
         """
-        termIdentifierField = self._sd_dict.get("Terms").get("identifier-field")
-        base = self._sd_dict.get("Base")
         # Note: Shared Dimension usually do not have a trailing "/" in there URL
         #   -> add it 
-        def make_iri(row):
-            # allows for a different DefinedTermSet URI, only if base is declared
-            if base:
-                return base + "/" + quote(str(row[termIdentifierField]))
-            else:
-                return self._sd_uri + "/" + quote(str(row[termIdentifierField]))
-        self._dataframe['terms-uri'] = self._dataframe.apply(
-            make_iri, axis=1
+        identifier_field = self._sd_dict["Terms"]["identifier-field"]
+        prefix = self._sd_dict.get("Base") or self._sd_uri
+
+        self._dataframe["terms-uri"] = self._dataframe[identifier_field].map(
+            lambda value: URIRef(f"{prefix}/{quote(str(value))}")
         )
-        self._dataframe['terms-uri'] = self._dataframe['terms-uri'].map(URIRef)
         self._dataframe = self._dataframe.set_index("terms-uri")
 
     def _construct_links_uri(self, linksToOtherTerms) -> None:
@@ -214,16 +208,13 @@ class SharedDimension:
         """
         # Note: Shared Dimension usually do not have a trailing "/" in there URL
         #   -> add it $ 
-        for key, value in linksToOtherTerms.items():
-            keyForUri = str(key) + "-uri"
-
-            def make_iri(row):
-                if not pd.isna(row[key]):
-                    return URIRef(self._sd_uri + "/" + quote((str(row[key]))))
-            
-            self._dataframe[keyForUri] = self._dataframe.apply(
-                make_iri, axis=1
+        for key in linksToOtherTerms:
+            self._dataframe[f"{key}-uri"] = self._dataframe[key].map(
+                lambda value: ""
+                if pd.isna(value)
+                else URIRef(f"{self._sd_uri}/{quote(str(value))}")
             )
+
     def _apply_mappings(self, mapping) -> None:
         #Adapted directly from the _apply_mappings in cube.py
         for key, value in mapping.items():
@@ -352,27 +343,30 @@ class SharedDimension:
             Returns:
                 None
         """
+        # fix for pandas 3 + pyarrow: enforce URIRef type
+        termIRI = URIRef(termsData.name)
+
         # It seems that after _construct_terms_uri() calls _dataframe.set_index("terms-uri"), the term uri is accessible through the .name value
-        self._graph.add((termsData.name, RDF.type, SCHEMA.DefinedTerm))
-        self._graph.add((termsData.name, RDF.type, SD_MD.SharedDimensionTerm))
+        self._graph.add((termIRI, RDF.type, SCHEMA.DefinedTerm))
+        self._graph.add((termIRI, RDF.type, SD_MD.SharedDimensionTerm))
 
         # Add the link to the SD
-        self._graph.add((termsData.name, SCHEMA.inDefinedTermSet, self._sd_uri))
+        self._graph.add((termIRI, SCHEMA.inDefinedTermSet, self._sd_uri))
         # Seems optional: add the link from the SD to the term
-        self._graph.add((self._sd_uri, SCHEMA.hasDefinedTerm, termsData.name))
+        self._graph.add((self._sd_uri, SCHEMA.hasDefinedTerm, termIRI))
 
-        self._graph.add((termsData.name, SCHEMA.identifier, Literal(termsData.get(termIdentifierField))))
+        self._graph.add((termIRI, SCHEMA.identifier, Literal(termsData.get(termIdentifierField))))
         
         if multilingual:
             for lang in self._languages:
                 name_key = f"{termNameField}_{lang}"
                 if name_key in termsData:
-                    self._graph.add((termsData.name, URIRef(SCHEMA.name), Literal(termsData.get(name_key), lang=lang.lower())))            
+                    self._graph.add((termIRI, URIRef(SCHEMA.name), Literal(termsData.get(name_key), lang=lang.lower())))
         else:
-            self._graph.add((termsData.name, URIRef(SCHEMA.name), Literal(termsData.get(termNameField))))
+            self._graph.add((termIRI, URIRef(SCHEMA.name), Literal(termsData.get(termNameField))))
 
         if validFrom:
-            self._graph.add((termsData.name, SCHEMA.validFrom, Literal(validFrom, datatype=XSD.dateTime)))
+            self._graph.add((termIRI, SCHEMA.validFrom, Literal(validFrom, datatype=XSD.dateTime)))
 
         # Handle links to other terms
         # The uris of the other therms were prepared in _construct_links_uri() and added to the data frame
@@ -383,7 +377,7 @@ class SharedDimension:
             if keyForUri in termsData:
                 otherTernmURL = termsData.get(keyForUri)
                 if otherTernmURL: # it can be empty, for instance the root not of a hierarchy has no 'parent'
-                    self._graph.add((termsData.name, URIRef(property), otherTernmURL))
+                    self._graph.add((termIRI, URIRef(property), URIRef(otherTernmURL)))
 
         # Handling other fields/properties
         for key, value in otherFields_dict.items():
@@ -391,7 +385,7 @@ class SharedDimension:
                 for lang in self._languages:
                     key_lng = f"{key}_{lang}"
                     if key_lng in termsData:
-                        self._graph.add((termsData.name, URIRef(value['URI']), Literal(termsData.get(key_lng), lang=lang.lower())))
+                        self._graph.add((termIRI, URIRef(value['URI']), Literal(termsData.get(key_lng), lang=lang.lower())))
             else:
                 if key in termsData:
                     rawValue = termsData.get(key)
@@ -401,7 +395,7 @@ class SharedDimension:
                         #   but it might happen that a field is not multilingual, but still concerns a specific language
                         #   on the other hand, if the 'language' key is not in the configuration file -> it will be a simple string with no language tag
                         sanitized_value = self._sanitize_value(rawValue, value.get('datatype'), value.get('language'))                        
-                        self._graph.add((termsData.name, URIRef(value['URI']), sanitized_value))
+                        self._graph.add((termIRI, URIRef(value['URI']), sanitized_value))
 
     def serialize(self, filename: str) -> Self:
         """Serialize the cube to a file.

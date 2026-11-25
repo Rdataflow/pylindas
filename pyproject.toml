@@ -31,7 +31,7 @@ query = ["sparql-dataframe>=0.4"]
 fetch = ["jsonschema>=4.0.0"]
 
 [project.urls]
-Homepage = "https://github.com/Kronmar-Bafu/lindas-pylindas"  
+Homepage = "https://github.com/SwissFederalArchives/lindas-pylindas"
 
 [project.scripts]
 pycube = "pylindas.cli:main"
