@@ -262,6 +262,19 @@ def _strip_timestamp_triples(graph: rdflib.Graph) -> rdflib.Graph:
     return graph
 
 
+def _round_floats(graph: rdflib.Graph) -> rdflib.Graph:
+    """Round xsd:float/double values to 12 significant digits.
+
+    pandas 3 parses CSV floats with round-trip precision, so the last digit
+    can differ by one ulp from the committed reference written under pandas 2.
+    """
+    for s, p, o in list(graph):
+        if isinstance(o, rdflib.Literal) and o.datatype in (rdflib.XSD.float, rdflib.XSD.double):
+            graph.remove((s, p, o))
+            graph.add((s, p, rdflib.Literal(float(f"{float(o):.12g}"), datatype=o.datatype)))
+    return graph
+
+
 def test_serialize_smoke_produces_isomorphic_ttl(tmp_path):
     """CLI ``serialize`` produces valid TTL isomorphic to the reference.
 
@@ -308,6 +321,8 @@ def test_serialize_smoke_produces_isomorphic_ttl(tmp_path):
 
     _strip_timestamp_triples(produced)
     _strip_timestamp_triples(reference)
+    _round_floats(produced)
+    _round_floats(reference)
 
     if not isomorphic(produced, reference):
         # Surface the differing triples to aid diagnosis rather than failing

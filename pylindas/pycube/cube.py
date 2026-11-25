@@ -596,16 +596,19 @@ class Cube:
             Returns:
                 None
         """
-        self._graph.add((self._cube_uri + "/ObservationSet", CUBE.observation, obs.name)) #obs.name is the index of the row which was set to be the 'obs-uri'
-        self._graph.add((obs.name, RDF.type, CUBE.Observation))
-        self._graph.add((obs.name, CUBE.observedBy, URIRef(self._cube_dict.get("Creator")[0].get("IRI"))))
+        # obs.name is the index of the row which was set to be the 'obs-uri'. With pandas 3 + pyarrow the index
+        # comes back as plain str, so it is re-wrapped as an rdflib term.
+        obs_uri = URIRef(obs.name)
+        self._graph.add((self._cube_uri + "/ObservationSet", CUBE.observation, obs_uri))
+        self._graph.add((obs_uri, RDF.type, CUBE.Observation))
+        self._graph.add((obs_uri, CUBE.observedBy, URIRef(self._cube_dict.get("Creator")[0].get("IRI"))))
 
         for column in obs.keys():
             shape_column = self._get_shape_column(column)
             path = URIRef(self._base_uri + "/" + shape_column.get("path"))
             sanitized_value = self._sanitize_value(obs.get(column), shape_column.get("datatype"), shape_column.get("language"),
                                                    iri=self._is_iri_dimension(shape_column))
-            self._graph.add((obs.name, URIRef(path), sanitized_value))
+            self._graph.add((obs_uri, URIRef(path), sanitized_value))
 
     def _get_shape_column(self, column: str):
         c = self._shape_dict.get(column)
