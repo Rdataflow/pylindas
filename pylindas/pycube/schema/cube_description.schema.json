@@ -1,0 +1,650 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/Kronmar-Bafu/lindas-pylindas/pylindas/pycube/schema/cube_description.schema.json",
+  "title": "pylindas cube description",
+  "type": "object",
+  "properties": {
+    "$schema": {
+      "type": "string"
+    },
+    "Name": {
+      "$ref": "#/$defs/multilingual"
+    },
+    "Description": {
+      "$ref": "#/$defs/multilingual"
+    },
+    "Publisher": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/organisation"
+      }
+    },
+    "Creator": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/organisation"
+      }
+    },
+    "Contributor": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/organisation"
+      }
+    },
+    "Themes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "IRI": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "Date Created": {},
+    "Contact Point": {
+      "$ref": "#/$defs/contactPoint"
+    },
+    "Base-URI": {
+      "type": "string"
+    },
+    "Identifier": {
+      "type": "string"
+    },
+    "Version": {
+      "type": [
+        "integer",
+        "string"
+      ]
+    },
+    "Work Status": {
+      "type": "string",
+      "enum": [
+        "Draft",
+        "Published"
+      ]
+    },
+    "Visualize": {
+      "type": "boolean"
+    },
+    "Opendataswiss": {
+      "type": "boolean"
+    },
+    "Accrual Periodicity": {
+      "type": "string",
+      "enum": [
+        "daily",
+        "weekly",
+        "monthly",
+        "yearly",
+        "irregular"
+      ]
+    },
+    "Namespace": {
+      "type": "string"
+    },
+    "dimensions": {
+      "type": "object",
+      "additionalProperties": {
+        "$ref": "#/$defs/dimension"
+      }
+    },
+    "Concepts": {
+      "type": "object",
+      "additionalProperties": {
+        "$ref": "#/$defs/concept"
+      }
+    }
+  },
+  "required": [
+    "Name",
+    "Description",
+    "Publisher",
+    "Creator",
+    "Contact Point",
+    "Base-URI",
+    "Identifier",
+    "Version",
+    "dimensions"
+  ],
+  "additionalProperties": false,
+  "$defs": {
+    "language": {
+      "type": "string",
+      "enum": [
+        "fr",
+        "en",
+        "de",
+        "it",
+        "la",
+        "rm",
+        "FR",
+        "EN",
+        "DE",
+        "IT",
+        "LA",
+        "RM"
+      ]
+    },
+    "datatype": {
+      "type": "string",
+      "enum": [
+        "string",
+        "normalizedString",
+        "token",
+        "language",
+        "anyURI",
+        "boolean",
+        "integer",
+        "int",
+        "long",
+        "short",
+        "byte",
+        "nonNegativeInteger",
+        "positiveInteger",
+        "nonPositiveInteger",
+        "negativeInteger",
+        "unsignedLong",
+        "unsignedInt",
+        "unsignedShort",
+        "unsignedByte",
+        "decimal",
+        "float",
+        "double",
+        "date",
+        "dateTime",
+        "dateTimeStamp",
+        "time",
+        "duration",
+        "dayTimeDuration",
+        "yearMonthDuration",
+        "gYear",
+        "gYearMonth",
+        "gMonth",
+        "gMonthDay",
+        "gDay",
+        "base64Binary",
+        "hexBinary",
+        "URI"
+      ]
+    },
+    "multilingual": {
+      "type": "object",
+      "properties": {
+        "fr": {
+          "type": "string"
+        },
+        "en": {
+          "type": "string"
+        },
+        "de": {
+          "type": "string"
+        },
+        "it": {
+          "type": "string"
+        },
+        "la": {
+          "type": "string"
+        },
+        "rm": {
+          "type": "string"
+        },
+        "FR": {
+          "type": "string"
+        },
+        "EN": {
+          "type": "string"
+        },
+        "DE": {
+          "type": "string"
+        },
+        "IT": {
+          "type": "string"
+        },
+        "LA": {
+          "type": "string"
+        },
+        "RM": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "organisation": {
+      "type": "object",
+      "properties": {
+        "IRI": {
+          "type": "string"
+        },
+        "Name": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "IRI"
+      ]
+    },
+    "contactPoint": {
+      "type": "object",
+      "properties": {
+        "IRI": {
+          "type": "string"
+        },
+        "E-Mail": {
+          "type": "string"
+        },
+        "Name": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "dimension": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "$ref": "#/$defs/multilingual"
+        },
+        "description": {
+          "$ref": "#/$defs/multilingual"
+        },
+        "path": {
+          "type": "string"
+        },
+        "datatype": {
+          "$ref": "#/$defs/datatype"
+        },
+        "dimension-type": {
+          "type": "string",
+          "enum": [
+            "Key Dimension",
+            "Measure Dimension",
+            "Annotation",
+            "Standard Error",
+            "Upper uncertainty",
+            "Lower uncertainty"
+          ]
+        },
+        "scale-type": {
+          "type": "string",
+          "enum": [
+            "nominal",
+            "ordinal",
+            "interval",
+            "ratio"
+          ]
+        },
+        "unit": {
+          "type": "string"
+        },
+        "relates-to": {
+          "type": "string"
+        },
+        "data-kind": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/dataKind"
+            },
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "mapping": {
+          "$ref": "#/$defs/mapping"
+        },
+        "annotation": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/annotation"
+          }
+        },
+        "hierarchy": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/hierarchy"
+          }
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "description",
+        "path",
+        "dimension-type",
+        "scale-type"
+      ]
+    },
+    "dataKind": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": [
+            "temporal",
+            "spatial-shape",
+            "spatial-coordinates"
+          ]
+        },
+        "unit": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "type"
+      ]
+    },
+    "mapping": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/mappingAdditive"
+        },
+        {
+          "$ref": "#/$defs/mappingReplace"
+        },
+        {
+          "$ref": "#/$defs/mappingRegex"
+        },
+        {
+          "$ref": "#/$defs/mappingConcept"
+        },
+        {
+          "$ref": "#/$defs/mappingFunction"
+        }
+      ]
+    },
+    "mappingAdditive": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": [
+            "additive"
+          ]
+        },
+        "base": {
+          "type": "string"
+        },
+        "value-type": {
+          "type": "string",
+          "enum": [
+            "Shared",
+            "Literal"
+          ]
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "base"
+      ]
+    },
+    "mappingReplace": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": [
+            "replace"
+          ]
+        },
+        "replacements": {
+          "type": "object"
+        },
+        "value-type": {
+          "type": "string",
+          "enum": [
+            "Shared",
+            "Literal"
+          ]
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "replacements"
+      ]
+    },
+    "mappingRegex": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": [
+            "regex"
+          ]
+        },
+        "pattern": {
+          "type": "string"
+        },
+        "replacement": {
+          "type": "string"
+        },
+        "value-type": {
+          "type": "string",
+          "enum": [
+            "Shared",
+            "Literal"
+          ]
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "pattern",
+        "replacement"
+      ]
+    },
+    "mappingConcept": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": [
+            "concept"
+          ]
+        },
+        "replacement-automated": {
+          "type": "string"
+        },
+        "concept-table": {
+          "type": "string"
+        },
+        "value-type": {
+          "type": "string",
+          "enum": [
+            "Shared",
+            "Literal"
+          ]
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "replacement-automated"
+      ]
+    },
+    "mappingFunction": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": [
+            "function"
+          ]
+        },
+        "filepath": {
+          "type": "string"
+        },
+        "function-name": {
+          "type": "string"
+        },
+        "value-type": {
+          "type": "string",
+          "enum": [
+            "Shared",
+            "Literal"
+          ]
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "filepath",
+        "function-name"
+      ]
+    },
+    "annotation": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": [
+            "limit",
+            "limit-range"
+          ]
+        },
+        "name": {
+          "$ref": "#/$defs/multilingual"
+        },
+        "context": {
+          "type": "object",
+          "additionalProperties": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "min": {},
+                  "max": {}
+                },
+                "additionalProperties": false
+              }
+            ]
+          }
+        },
+        "value": {},
+        "min-value": {},
+        "max-value": {}
+      },
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "name"
+      ]
+    },
+    "hierarchy": {
+      "type": "object",
+      "properties": {
+        "root": {
+          "type": [
+            "string",
+            "integer"
+          ]
+        },
+        "name": {
+          "type": "string"
+        },
+        "next-in-hierarchy": {
+          "$ref": "#/$defs/nextInHierarchy"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "root",
+        "name"
+      ]
+    },
+    "nextInHierarchy": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "path": {
+          "type": "string"
+        },
+        "inverse-path": {
+          "type": "string"
+        },
+        "target-class": {
+          "type": "string"
+        },
+        "next-in-hierarchy": {
+          "$ref": "#/$defs/nextInHierarchy"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "name"
+      ]
+    },
+    "concept": {
+      "type": "object",
+      "properties": {
+        "URI": {
+          "type": "string"
+        },
+        "name-field": {
+          "type": "string"
+        },
+        "multilingual": {
+          "type": "boolean"
+        },
+        "position-field": {
+          "type": "string"
+        },
+        "id-field": {
+          "type": "string"
+        },
+        "parent-field": {
+          "type": "string"
+        },
+        "other-fields": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/$defs/conceptField"
+          }
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "URI",
+        "name-field"
+      ]
+    },
+    "conceptField": {
+      "type": "object",
+      "properties": {
+        "URI": {
+          "type": "string"
+        },
+        "multilingual": {
+          "type": "boolean"
+        },
+        "datatype": {
+          "$ref": "#/$defs/datatype"
+        },
+        "language": {
+          "$ref": "#/$defs/language"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "URI"
+      ]
+    }
+  }
+}

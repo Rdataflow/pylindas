@@ -1,0 +1,135 @@
+"""Shared pytest fixtures enforcing offline, deterministic execution for the
+``tests/unit`` package.
+
+Design reference: Testing Strategy — Network isolation (Requirements 16.4, 18.4).
+
+Every unit test runs with an autouse fixture that:
+
+1. Replaces the real ``socket.socket`` with a guard that raises on any attempt
+   to open a socket, so an accidental outbound connection becomes an
+   immediate, clear failure instead of a flaky, slow network call.
+2. Mocks the LINDAS network entry points so nothing reaches a live endpoint by
+   default:
+   * ``pylindas.lindas.query.query_lindas`` and the already-bound copies in the
+     modules that do ``from pylindas.lindas.query import query_lindas``
+     (``pylindas.pycube.cube`` and
+     ``pylindas.pyshareddimension.shared_dimension``). The default mock returns
+     ``False`` so existence checks behave as "resource does not exist".
+   * ``SPARQLWrapper.SPARQLWrapper`` so ``query.py`` cannot open a connection
+     even if called directly.
+   * the HTTP verbs in ``pylindas.lindas.upload.requests`` (GraphDB uploads use
+     the SPARQL 1.1 Graph Store HTTP Protocol) so ``upload.py`` cannot reach a
+     live endpoint.
+
+Individual tests can override the ``query_lindas`` behavior (e.g. to simulate
+"resource exists") with their own ``monkeypatch``/``unittest.mock`` setup;
+``monkeypatch`` automatically restores everything after each test.
+"""
+
+import socket
+
+import pytest
+from unittest.mock import MagicMock
+
+
+# Entry points that import ``query_lindas`` by value and therefore keep a
+# module-local reference that must be patched independently of the source
+# module. Each is patched with ``raising=False`` so the fixture never errors if
+# a module was not imported in a given test.
+_QUERY_LINDAS_TARGETS = (
+    "pylindas.lindas.query.query_lindas",
+    "pylindas.pycube.cube.query_lindas",
+    "pylindas.pyshareddimension.shared_dimension.query_lindas",
+)
+
+
+class GuardedSocket:
+    """Stand-in for ``socket.socket`` that refuses to be instantiated.
+
+    Any real socket construction during a unit test raises immediately with a
+    clear message, turning accidental network use into an obvious failure.
+    """
+
+    def __init__(self, *args, **kwargs):
+        raise RuntimeError("Network access is disabled in unit tests")
+
+
+@pytest.fixture(autouse=True)
+def _no_network(monkeypatch):
+    """Autouse fixture making the whole unit package run fully offline."""
+    # 1. Block real sockets. Applied at test time (after imports), so libraries
+    #    that create sockets at import time are unaffected.
+    monkeypatch.setattr(socket, "socket", GuardedSocket)
+
+    # 2. Mock the LINDAS query entry points (default: resource does not exist).
+    #    A single shared mock keeps behavior consistent across the bound copies.
+    query_mock = MagicMock(return_value=False)
+    for target in _QUERY_LINDAS_TARGETS:
+        monkeypatch.setattr(target, query_mock, raising=False)
+
+    # 3. Mock SPARQLWrapper so query.py cannot open a connection.
+    try:
+        import SPARQLWrapper as _sparql_wrapper
+
+        monkeypatch.setattr(
+            _sparql_wrapper, "SPARQLWrapper", MagicMock(), raising=False
+        )
+    except ImportError:
+        pass
+
+    # 4. Mock the HTTP verbs used by upload.py (GraphDB Graph Store Protocol)
+    #    so it cannot reach a live endpoint. Patched on the module-local
+    #    ``requests`` reference bound in upload.py.
+    try:
+        from pylindas.lindas import upload as _upload
+
+        for _verb in ("post", "put", "delete", "get"):
+            monkeypatch.setattr(
+                _upload.requests, _verb, MagicMock(), raising=False
+            )
+    except ImportError:
+        pass
+
+    yield
+
+
+# --- Minimal valid cube input for tests that only exercise concepts/hierarchies -----------
+# Cube() validates the frame against the description (Requirement 6), so tests that do not
+# care about observations still need a description with one real key dimension and a
+# frame whose columns match it exactly.
+def minimal_dimensions() -> dict:
+    """A description's ``dimensions`` block with a single key dimension ``k``."""
+    return {"k": {"name": {"en": "Key"}, "description": {"en": "Key dimension"}, "path": "key",
+                  "dimension-type": "Key Dimension", "scale-type": "nominal"}}
+
+
+def minimal_description(**overrides) -> dict:
+    """A complete, schema-valid top-level cube description (fresh dict on every call).
+
+    Keyword ``overrides`` replace or add top-level keys (e.g. ``Concepts=...``,
+    ``Identifier="x"``, ``dimensions=...``). Defaults to the single key dimension ``k``.
+    """
+    desc = {
+        "Name": {"en": "Name"},
+        "Description": {"en": "Description"},
+        "Publisher": [{"IRI": "https://example.org/publisher"}],
+        "Creator": [{"IRI": "https://example.org/creator"}],
+        "Contact Point": {"E-Mail": "contact@example.org"},
+        "Base-URI": "https://example.org/cube/",
+        "Identifier": "c",
+        "Version": 1,
+        "Namespace": "ex",
+        "dimensions": minimal_dimensions(),
+    }
+    desc.update(overrides)
+    return desc
+
+
+def minimal_frame():
+    """One-row frame matching :func:`minimal_dimensions`."""
+    import pandas as pd
+    return pd.DataFrame({"k": ["a"]})
+
+
+def pytest_configure(config):
+    config.addinivalue_line("markers", "slow: slow tests (e.g. wheel build and install in a throwaway venv)")

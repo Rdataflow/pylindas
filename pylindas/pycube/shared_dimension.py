@@ -1,8 +1,8 @@
 from rdflib import Graph, Literal, RDF, URIRef
-from py_cube.lindas.namespaces import *
-from shapely.geometry import shape
+from pylindas._optional import require_extra
 import json
-import argparse
+
+from pylindas.lindas.paths import reject_traversal
 
 
 class GeoSharedDimension(object):
@@ -14,23 +14,6 @@ class GeoSharedDimension(object):
         self._base_uri = base_uri
         self._graph = graph
         self._description = description
-    
-    def _setup_graph(self) -> Graph:
-        """Set up the graph by binding namespaces and returning the graph object.
-        
-        Returns:
-            Graph: The graph object with namespaces bound.
-        """
-        graph = Graph()
-        for prefix, nmspc in Namespaces.items():
-            graph.bind(prefix=prefix, namespace=nmspc)
-        try:
-            graph.bind(prefix=self._cube_dict.get("Namespace"), namespace=Namespace(self._base_uri))
-        except KeyError:
-            print("no Namespace")
-            pass
-        return graph
-
 
     def _geojson_to_wkt(self, geojson: dict) -> str:
         """Convert GeoJSON to WKT.
@@ -40,6 +23,7 @@ class GeoSharedDimension(object):
         """
         if not geojson:
             return None
+        shape = require_extra("shapely.geometry", "shared").shape
         geom = shape(geojson)
         return geom.wkt
 
@@ -81,6 +65,8 @@ class GeoSharedDimension(object):
 
 
 def convert_geojson_to_ttl(geojson_filename, ttl_filename):
+    reject_traversal(geojson_filename)
+    reject_traversal(ttl_filename)
     with open(geojson_filename, 'r') as f:
         geojson_data = json.load(f)
 
